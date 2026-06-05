@@ -11,9 +11,12 @@ The worked example here is **_Hindu Holidays and Ceremonials_** by Rai Bahadur B
 University Library, no known U.S. copyright restrictions). The same pipeline is built to carry
 other books and other scripts (English, Marathi, Hindi, Sanskrit).
 
+**Read it now:** the clean reading edition is on the Internet Archive —
+[archive.org/details/hindu-holidays-and-ceremonials-gupte-1919](https://archive.org/details/hindu-holidays-and-ceremonials-gupte-1919).
+
 **Get the finished editions:** see the [Releases](../../releases) page for the ready-to-read
-HTML (zip) and PDF. This repo holds the **code** and the **structured OCR output** so you can
-reproduce or adapt them.
+HTML (zip), the full PDF (with original scans appended), and the light reading-edition PDF. This
+repo holds the **code** and the **structured OCR output** so you can reproduce or adapt them.
 
 ---
 
