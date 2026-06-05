@@ -32,3 +32,6 @@ geeta_rahasya_1_pages15to30.pdf
 # Release zips (uploaded to Releases, not tracked)
 *.zip
 build_tmp/
+
+# Personal runbook (not for the public repo)
+archive-org-upload-guide.md
