@@ -35,3 +35,7 @@ build_tmp/
 
 # Personal runbook (not for the public repo)
 archive-org-upload-guide.md
+
+# archive.org upload scripts (operational)
+upload_to_archive.py
+upload_to_archive.sh
