@@ -28,3 +28,7 @@ geeta_rahasya_1_pages15to30.pdf
 
 # OS
 .DS_Store
+
+# Release zips (uploaded to Releases, not tracked)
+*.zip
+build_tmp/
