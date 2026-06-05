@@ -19,8 +19,7 @@ FULL = ROOT / "full"
 (ROOT / "build_tmp").mkdir(exist_ok=True)   # scratch for figure crops
 PILOT = [1, 7, 14, 43, 47, 60, 61, 62, 349, 350]
 PAGES = PILOT if "--pilot" in sys.argv else list(range(1, 413))
-NOSCAN = "--no-scans" in sys.argv          # clean reading edition: no appended scans (lighter PDF)
-ARCHIVE_URL = "https://archive.org/details/cu31924024133922"   # original facsimile
+NOSCAN = "--no-scans" in sys.argv          # bare reading edition: no appended scans AND no per-page links
 
 def to_roman(n):
     vals=[(1000,'m'),(900,'cm'),(500,'d'),(400,'cd'),(100,'c'),(90,'xc'),(50,'l'),
@@ -68,16 +67,28 @@ def load_page(pno):
 
 def norm_key(t): return re.sub(r"[^a-z0-9]","",t.lower())
 
+def img_src(im_or_path, crop=None):
+    """Data-URI for an embedded image. Bare reading edition (NOSCAN) -> downscaled JPEG to keep
+    the file small (text stays vector-sharp); otherwise full-resolution PNG."""
+    im = im_or_path if hasattr(im_or_path, "mode") else Image.open(im_or_path)
+    if crop: im = im.crop(crop)
+    if NOSCAN:
+        if im.width > 1100:
+            im = im.resize((1100, round(im.height * 1100 / im.width)))
+        buf = io.BytesIO(); im.convert("RGB").save(buf, "JPEG", quality=82, optimize=True)
+        return "data:image/jpeg;base64," + base64.b64encode(buf.getvalue()).decode()
+    buf = io.BytesIO(); im.save(buf, "PNG")
+    return "data:image/png;base64," + base64.b64encode(buf.getvalue()).decode()
+
 def render_block(blk, scan, pno, idx, has_pic, is_bk=False):
     lab=blk["label"]; html=(blk["html"] or "").strip()
+    if NOSCAN: html=re.sub(r"</?a\b[^>]*>","",html)   # bare edition: strip any live links from the OCR text
     if lab in ("Page-header","PageHeader"): return ""
     if lab in ("Page-footer","PageFooter"):
         return f'<p class="credit">{strip_p(html)}</p>' if (has_pic and html) else ""
     if lab in PICT:
         x0,y0,x1,y1=[int(v) for v in blk["bbox"]]
-        cp=ROOT/"build_tmp"/f"pcrop_p{pno}_{idx}.png"
-        if not cp.exists(): Image.open(scan).crop((x0,y0,x1,y1)).save(cp)
-        return f'<figure class="plate"><img src="data:image/png;base64,{b64(cp)}"></figure>'
+        return f'<figure class="plate"><img src="{img_src(scan, crop=(x0,y0,x1,y1))}"></figure>'
     if not html: return ""
     if lab in HEADISH:
         inner=re.sub(r"</?h[1-6][^>]*>","",html)   # drop OCR's <h1> wrapper (weasyprint auto-bookmarks it, and it sizes wrong)
@@ -96,8 +107,7 @@ def page_section(pno, pt=None):
     real_text=any(b["label"] in TEXTISH and (b["html"] or "").strip() for b in blocks)
     has_pic=any(b["label"] in PICT for b in blocks)
     style=f' style="font-size:{pt}pt"' if pt else ''
-    orig=(f'<a class="orig" href="{ARCHIVE_URL}">Original facsimile &#8599;</a>' if NOSCAN
-          else f'<a class="orig" href="#src{pno}">See Original Page &#8599;</a>')
+    orig=('' if NOSCAN else f'<a class="orig" href="#src{pno}">See Original Page &#8599;</a>')
     if not real_text and ink_fraction(scan)>0.95:
         return f'<section class="pdfpage" id="p{pno}"{style}><div class="notext">Cover &mdash; no readable text</div>{orig}</section>'
     if not real_text and ink_fraction(scan)<0.03:
@@ -110,14 +120,14 @@ def page_section(pno, pt=None):
     npic=sum(1 for b in blocks if b["label"] in PICT)
     if npic>=2:                       # multi-figure plate: show the whole scan (keeps original layout), not stacked crops
         fns=[]
-        main_html=top_folio+f'<figure class="plate plate-full"><img src="data:image/png;base64,{b64(scan)}"></figure>'
+        main_html=top_folio+f'<figure class="plate plate-full"><img src="{img_src(scan)}"></figure>'
     else:
         main=[]; fns=[]
         for i,b in enumerate(blocks):
             (fns if b["label"]=="Footnote" else main).append(render_block(b,scan,pno,i,has_pic,i in bk_ids))
         main_html=top_folio+"".join(x for x in main if x)
         if not main_html.strip():
-            main_html=top_folio+f'<figure class="plate"><img src="data:image/png;base64,{b64(scan)}"></figure>'
+            main_html=top_folio+f'<figure class="plate"><img src="{img_src(scan)}"></figure>'
     bot_folio=f'<div class="folio-bottom">{fol}</div>' if (fol and pno>60) else ''
     bottom="".join(x for x in fns if x)+bot_folio
     bottom=f'<div class="pagebottom">{bottom}</div>' if bottom.strip() else ''
