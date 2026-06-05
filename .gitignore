@@ -1,0 +1,30 @@
+# Python env / caches
+.venv/
+__pycache__/
+*.pyc
+
+# Large binaries — not in git. Source scan: archive.org/details/cu31924024133922.
+# Built editions are attached to GitHub Releases.
+source1.pdf
+*.pdf
+!docs/**/*.pdf
+full/scans/
+assets/
+build_tmp/
+
+# Page scans / generated image assets are reproducible from the source PDF
+full/scans/
+
+# Built editions live on Releases (HTML needs its assets/ alongside it, so don't half-commit it)
+*.html
+
+# Working / scratch artifacts and private notes
+.work/
+prototype.html
+prototype.pdf
+HANDOFF-next-book.md
+geeta_rahasya_1_pages15to30.pdf
+*.log
+
+# OS
+.DS_Store

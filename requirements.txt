@@ -1,0 +1,8 @@
+# Python 3.12+ (developed on 3.14), macOS Apple Silicon.
+# Surya also needs the llama.cpp backend:  brew install llama.cpp
+# weasyprint needs pango:  brew install pango
+#   and at runtime:  export DYLD_FALLBACK_LIBRARY_PATH=/opt/homebrew/lib
+pymupdf==1.27.2.3
+surya-ocr==0.20.0
+weasyprint==69.0
+pillow==10.4.0
