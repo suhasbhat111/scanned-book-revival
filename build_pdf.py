@@ -19,6 +19,8 @@ FULL = ROOT / "full"
 (ROOT / "build_tmp").mkdir(exist_ok=True)   # scratch for figure crops
 PILOT = [1, 7, 14, 43, 47, 60, 61, 62, 349, 350]
 PAGES = PILOT if "--pilot" in sys.argv else list(range(1, 413))
+NOSCAN = "--no-scans" in sys.argv          # clean reading edition: no appended scans (lighter PDF)
+ARCHIVE_URL = "https://archive.org/details/cu31924024133922"   # original facsimile
 
 def to_roman(n):
     vals=[(1000,'m'),(900,'cm'),(500,'d'),(400,'cd'),(100,'c'),(90,'xc'),(50,'l'),
@@ -94,7 +96,8 @@ def page_section(pno, pt=None):
     real_text=any(b["label"] in TEXTISH and (b["html"] or "").strip() for b in blocks)
     has_pic=any(b["label"] in PICT for b in blocks)
     style=f' style="font-size:{pt}pt"' if pt else ''
-    orig=f'<a class="orig" href="#src{pno}">See Original Page &#8599;</a>'
+    orig=(f'<a class="orig" href="{ARCHIVE_URL}">Original facsimile &#8599;</a>' if NOSCAN
+          else f'<a class="orig" href="#src{pno}">See Original Page &#8599;</a>')
     if not real_text and ink_fraction(scan)>0.95:
         return f'<section class="pdfpage" id="p{pno}"{style}><div class="notext">Cover &mdash; no readable text</div>{orig}</section>'
     if not real_text and ink_fraction(scan)<0.03:
@@ -176,14 +179,19 @@ for k,pno in enumerate(PAGES,1):
     if k%25==0 or k==len(PAGES):
         print(f"  fit {k}/{len(PAGES)} (p{pno}) … {time.time()-t0:.0f}s", flush=True)
 
-print("  rendering appended source scans (downscaled)…", flush=True)
-src_pages=[f'<section class="srcpage" id="src{pno}"><a class="back" href="#p{pno}">&#8617; Back to New PDF</a>'
-           f'<img src="data:image/jpeg;base64,{src_jpeg_b64(str(FULL/"scans"/f"scan_p{pno:04d}.png"))}">'
-           f'<div class="srccap">Original scan &middot; PDF page {pno}</div></section>'
-           for pno in PAGES]
+if NOSCAN:
+    src_pages=[]
+    print("  clean reading edition — skipping appended scans", flush=True)
+else:
+    print("  rendering appended source scans (downscaled)…", flush=True)
+    src_pages=[f'<section class="srcpage" id="src{pno}"><a class="back" href="#p{pno}">&#8617; Back to New PDF</a>'
+               f'<img src="data:image/jpeg;base64,{src_jpeg_b64(str(FULL/"scans"/f"scan_p{pno:04d}.png"))}">'
+               f'<div class="srccap">Original scan &middot; PDF page {pno}</div></section>'
+               for pno in PAGES]
 
 print("  final weasyprint pass…", flush=True)
-OUT = ROOT / ("Hindu Holidays and Ceremonials - B. A. Gupte" + ("-pilot" if "--pilot" in sys.argv else "") + ".pdf")
+_suffix = "-pilot" if "--pilot" in sys.argv else (" (reading edition)" if NOSCAN else "")
+OUT = ROOT / ("Hindu Holidays and Ceremonials - B. A. Gupte" + _suffix + ".pdf")
 weasyprint.HTML(string=wrap("".join(clean_pages)+"".join(src_pages))).write_pdf(str(OUT))
 mb=OUT.stat().st_size/1048576
 print(f"wrote {OUT}  ({mb:.1f} MB, {len(PAGES)} pages)  in {time.time()-t0:.0f}s")
